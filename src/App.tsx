@@ -13,7 +13,7 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, isEmailVerificationRequired } = useAuth();
   const location = useLocation();
   
   if (loading) {
@@ -27,15 +27,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (!session) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+  // For development purposes, we're allowing users to access protected routes
+  // even if they haven't verified their email
+  if (session || isEmailVerificationRequired) {
+    return <>{children}</>;
   }
   
-  return <>{children}</>;
+  return <Navigate to="/auth" state={{ from: location }} replace />;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, isEmailVerificationRequired } = useAuth();
   
   if (loading) {
     return (
@@ -48,7 +50,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (session) {
+  // For development purposes, don't redirect if email verification is required but not done
+  if (session && !isEmailVerificationRequired) {
     return <Navigate to="/" replace />;
   }
   

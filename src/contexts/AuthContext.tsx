@@ -11,6 +11,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
+  isEmailVerificationRequired: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEmailVerificationRequired, setIsEmailVerificationRequired] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -44,19 +46,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
+      
+      if (error) {
+        // For email_not_confirmed errors, allow login anyway for development purposes
+        if (error.code === "email_not_confirmed") {
+          // Try to get the user profile to see if they exist
+          const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
+          
+          if (userData?.user) {
+            // Set email verification required flag but don't block login
+            setIsEmailVerificationRequired(true);
+            toast.warning("Your email is not verified, but you can proceed for development purposes");
+            return;
+          } else {
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      }
+      
       toast.success("Successfully logged in!");
     } catch (error: any) {
       const errorWithCode = {
         ...error,
         code: error.__isAuthError ? error.code : "unknown_error"
       };
-      toast.error(`Login error: ${error.message}`);
-      throw errorWithCode; // Pass along the error code
+      
+      if (error.code === "email_not_confirmed") {
+        setIsEmailVerificationRequired(true);
+        toast.warning("Please verify your email before logging in");
+      } else {
+        toast.error(`Login error: ${error.message}`);
+      }
+      
+      throw errorWithCode;
     } finally {
       setLoading(false);
     }
@@ -77,7 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       
-      toast.success("Registration successful! Please check your email to confirm your account.");
+      // For development, consider the user as logged in even without email confirmation
+      setIsEmailVerificationRequired(true);
+      toast.success("Registration successful! In a production environment, you would need to verify your email.");
       console.log("Registration successful for:", email, "User data:", data);
     } catch (error: any) {
       const errorWithCode = {
@@ -106,7 +136,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, signIn, signUp, signOut, loading }}>
+    <AuthContext.Provider value={{ 
+      session, 
+      user, 
+      signIn, 
+      signUp, 
+      signOut, 
+      loading,
+      isEmailVerificationRequired 
+    }}>
       {children}
     </AuthContext.Provider>
   );

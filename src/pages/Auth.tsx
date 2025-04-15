@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -32,7 +31,7 @@ export default function Auth() {
   const [activeTab, setActiveTab] = useState("login");
   const [emailNeedsVerification, setEmailNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
-  const { signIn, signUp, loading } = useAuth();
+  const { signIn, signUp, loading, isEmailVerificationRequired } = useAuth();
   const navigate = useNavigate();
 
   const loginForm = useForm<LoginFormValues>({
@@ -53,9 +52,10 @@ export default function Auth() {
   });
 
   const handleLogin = async (values: LoginFormValues) => {
-    setEmailNeedsVerification(false);
     try {
       await signIn(values.email, values.password);
+      
+      // For development purposes, redirect even if email needs verification
       navigate("/");
     } catch (error: any) {
       console.error("Login error:", error);
@@ -64,7 +64,6 @@ export default function Auth() {
       if (error.code === "email_not_confirmed") {
         setEmailNeedsVerification(true);
         setVerificationEmail(values.email);
-        toast.error("Please verify your email before logging in");
       } else {
         toast.error(error.message || "Failed to login");
       }
@@ -74,15 +73,47 @@ export default function Auth() {
   const handleRegister = async (values: RegisterFormValues) => {
     try {
       await signUp(values.email, values.password, values.fullName);
+      
+      // For development purposes, redirect to login or home after registration
       setVerificationEmail(values.email);
       setEmailNeedsVerification(true);
-      toast.success("Account created successfully! Please check your email for verification.");
       setActiveTab("login");
+      
+      // For development, optionally go directly to homepage
+      navigate("/");
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "Failed to register");
     }
   };
+
+  const verificationMessage = (
+    <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
+      <div className="flex items-start">
+        <AlertCircle className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />
+        <div>
+          <h3 className="text-sm font-medium text-amber-800">Email verification required</h3>
+          <p className="mt-1 text-sm text-amber-700">
+            We sent a verification link to <strong>{verificationEmail}</strong>.
+            Please check your inbox and click the link to verify your email address.
+          </p>
+          <div className="mt-3 p-3 bg-amber-100 rounded-md text-xs text-amber-800 border border-amber-200">
+            <strong>Development Notice:</strong> You can disable email verification in the Supabase dashboard 
+            under Authentication → Email Templates → Confirm signup → Enable Email Confirmation.
+          </div>
+          <div className="mt-3">
+            <Button 
+              variant="outline" 
+              className="w-full border-amber-300 text-amber-700 hover:bg-amber-100"
+              onClick={() => navigate("/")}
+            >
+              Continue to app anyway (Development only)
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 p-4">
@@ -100,24 +131,9 @@ export default function Auth() {
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
             
-              {emailNeedsVerification ? (
-                <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
-                  <div className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />
-                    <div>
-                      <h3 className="text-sm font-medium text-amber-800">Email verification required</h3>
-                      <p className="mt-1 text-sm text-amber-700">
-                        We sent a verification link to <strong>{verificationEmail}</strong>.
-                        Please check your inbox and click the link to verify your email address.
-                      </p>
-                      <p className="mt-3 text-xs text-amber-600">
-                        Note: For development purposes, you can disable email verification in the Supabase dashboard 
-                        under Authentication → Email Templates → Confirm signup → Enable Email Confirmation.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
+              {emailNeedsVerification && verificationMessage}
+              
+              {!emailNeedsVerification && (
                 <>
                   <TabsContent value="login" className="mt-4">
                     <Form {...loginForm}>
