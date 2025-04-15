@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -30,6 +30,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function Auth() {
   const [activeTab, setActiveTab] = useState("login");
+  const [emailNeedsVerification, setEmailNeedsVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
   const { signIn, signUp, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -51,21 +53,34 @@ export default function Auth() {
   });
 
   const handleLogin = async (values: LoginFormValues) => {
+    setEmailNeedsVerification(false);
     try {
       await signIn(values.email, values.password);
       navigate("/");
     } catch (error: any) {
       console.error("Login error:", error);
+      
+      // Handle the email not confirmed error specifically
+      if (error.code === "email_not_confirmed") {
+        setEmailNeedsVerification(true);
+        setVerificationEmail(values.email);
+        toast.error("Please verify your email before logging in");
+      } else {
+        toast.error(error.message || "Failed to login");
+      }
     }
   };
 
   const handleRegister = async (values: RegisterFormValues) => {
     try {
       await signUp(values.email, values.password, values.fullName);
+      setVerificationEmail(values.email);
+      setEmailNeedsVerification(true);
       toast.success("Account created successfully! Please check your email for verification.");
       setActiveTab("login");
     } catch (error: any) {
       console.error("Registration error:", error);
+      toast.error(error.message || "Failed to register");
     }
   };
 
@@ -85,104 +100,125 @@ export default function Auth() {
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
             
-              <TabsContent value="login" className="mt-4">
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="name@example.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Logging in...
-                        </>
-                      ) : (
-                        "Log in"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
+              {emailNeedsVerification ? (
+                <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-amber-500 mr-2 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium text-amber-800">Email verification required</h3>
+                      <p className="mt-1 text-sm text-amber-700">
+                        We sent a verification link to <strong>{verificationEmail}</strong>.
+                        Please check your inbox and click the link to verify your email address.
+                      </p>
+                      <p className="mt-3 text-xs text-amber-600">
+                        Note: For development purposes, you can disable email verification in the Supabase dashboard 
+                        under Authentication → Email Templates → Confirm signup → Enable Email Confirmation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <TabsContent value="login" className="mt-4">
+                    <Form {...loginForm}>
+                      <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                        <FormField
+                          control={loginForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="name@example.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={loginForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Logging in...
+                            </>
+                          ) : (
+                            "Log in"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
+                  </TabsContent>
 
-              <TabsContent value="register" className="mt-4">
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="John Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="name@example.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
-                        </>
-                      ) : (
-                        "Create account"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
+                  <TabsContent value="register" className="mt-4">
+                    <Form {...registerForm}>
+                      <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                        <FormField
+                          control={registerForm.control}
+                          name="fullName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="John Doe" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="name@example.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating account...
+                            </>
+                          ) : (
+                            "Create account"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
+                  </TabsContent>
+                </>
+              )}
             </Tabs>
           </CardHeader>
           <CardFooter className="flex flex-col space-y-2 pt-2">

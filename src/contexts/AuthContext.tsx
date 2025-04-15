@@ -51,8 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       toast.success("Successfully logged in!");
     } catch (error: any) {
+      const errorWithCode = {
+        ...error,
+        code: error.__isAuthError ? error.code : "unknown_error"
+      };
       toast.error(`Login error: ${error.message}`);
-      throw error;
+      throw errorWithCode; // Pass along the error code
     } finally {
       setLoading(false);
     }
@@ -76,8 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success("Registration successful! Please check your email to confirm your account.");
       console.log("Registration successful for:", email, "User data:", data);
     } catch (error: any) {
+      const errorWithCode = {
+        ...error,
+        code: error.__isAuthError ? error.code : "unknown_error"
+      };
       toast.error(`Registration error: ${error.message}`);
-      throw error;
+      throw errorWithCode;
     } finally {
       setLoading(false);
     }
