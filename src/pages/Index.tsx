@@ -1,25 +1,25 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PersonalInfo } from "@/components/ResumeForm/PersonalInfo";
 import { Experience } from "@/components/ResumeForm/Experience";
 import { Education } from "@/components/ResumeForm/Education";
 import { Skills } from "@/components/ResumeForm/Skills";
+import { AdditionalSections } from "@/components/ResumeForm/AdditionalSections";
 import { ResumePreview } from "@/components/ResumePreview/ResumePreview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, LogOut, FileText, Sun, Moon, SaveIcon } from "lucide-react";
-import { toPDF } from "@/utils/pdf";
+import { toPDF, toWord } from "@/utils/export";
 import { useAuth } from "@/contexts/AuthContext";
 import { AnimatedGradient } from "@/components/ui/animated-gradient";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Index = () => {
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   
   useEffect(() => {
-    // This ensures the theme is properly applied when the component mounts
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.classList.toggle('dark', currentTheme === 'dark');
   }, []);
@@ -35,6 +35,11 @@ const Index = () => {
     experiences: [],
     education: [],
     skills: [],
+    certifications: [],
+    hobbies: [],
+    extraCurricular: [],
+    softSkills: [],
+    font: "inter",
   });
 
   const handlePersonalInfoChange = (field: string, value: string) => {
@@ -56,29 +61,56 @@ const Index = () => {
     setFormData((prev) => ({ ...prev, skills }));
   };
 
+  const handleCertificationsChange = (value: string[]) => {
+    setFormData((prev) => ({ ...prev, certifications: value }));
+  };
+
+  const handleHobbiesChange = (value: string[]) => {
+    setFormData((prev) => ({ ...prev, hobbies: value }));
+  };
+
+  const handleExtraCurricularChange = (value: string[]) => {
+    setFormData((prev) => ({ ...prev, extraCurricular: value }));
+  };
+
+  const handleSoftSkillsChange = (value: string[]) => {
+    setFormData((prev) => ({ ...prev, softSkills: value }));
+  };
+
+  const handleFontChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, font: value }));
+  };
+
+  const handleAdditionalSectionsChange = (field: keyof typeof formData, value: string[]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
-  const handleDownload = () => {
+  const handleDownload = async (format: 'pdf' | 'docx') => {
     if (!formData.personalInfo.fullName) {
       toast.error("Please enter your name before downloading");
       return;
     }
     
+    const fileName = `${formData.personalInfo.fullName.replace(/\s+/g, "_")}_resume`;
+    
     toast.promise(
-      toPDF("resume-preview", `${formData.personalInfo.fullName.replace(/\s+/g, "_")}_resume.pdf`),
+      format === 'pdf' 
+        ? toPDF("resume-preview", `${fileName}.pdf`)
+        : toWord(formData, `${fileName}.docx`),
       {
-        loading: "Generating PDF...",
-        success: "Resume downloaded successfully!",
-        error: "Failed to generate PDF. Please try again."
+        loading: `Generating ${format.toUpperCase()}...`,
+        success: `Resume downloaded successfully as ${format.toUpperCase()}!`,
+        error: `Failed to generate ${format.toUpperCase()}. Please try again.`
       }
     );
   };
 
-  // Local storage functions
   const saveToLocalStorage = () => {
     localStorage.setItem("resumeData", JSON.stringify(formData));
     toast.success("Resume data saved successfully!");
@@ -139,11 +171,12 @@ const Index = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-blue-100/80 to-indigo-100/80 dark:from-blue-900/30 dark:to-indigo-900/30">
-              <TabsTrigger value="personal" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Personal</TabsTrigger>
-              <TabsTrigger value="experience" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Experience</TabsTrigger>
-              <TabsTrigger value="education" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Education</TabsTrigger>
-              <TabsTrigger value="skills" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Skills</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 bg-gradient-to-r from-blue-100/80 to-indigo-100/80 dark:from-blue-900/30 dark:to-indigo-900/30">
+              <TabsTrigger value="personal">Personal</TabsTrigger>
+              <TabsTrigger value="experience">Experience</TabsTrigger>
+              <TabsTrigger value="education">Education</TabsTrigger>
+              <TabsTrigger value="skills">Skills</TabsTrigger>
+              <TabsTrigger value="additional">Additional</TabsTrigger>
             </TabsList>
             
             <TabsContent value="personal" className="mt-4 animate-fade-in">
@@ -173,6 +206,34 @@ const Index = () => {
                 onChange={handleSkillsChange}
               />
             </TabsContent>
+            
+            <TabsContent value="additional" className="mt-4 animate-fade-in">
+              <div className="mb-4">
+                <Label>Select Font</Label>
+                <Select value={formData.font} onValueChange={handleFontChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inter">Inter</SelectItem>
+                    <SelectItem value="playfair">Playfair Display</SelectItem>
+                    <SelectItem value="roboto">Roboto</SelectItem>
+                    <SelectItem value="lato">Lato</SelectItem>
+                    <SelectItem value="montserrat">Montserrat</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <AdditionalSections
+                certifications={formData.certifications}
+                hobbies={formData.hobbies}
+                extraCurricular={formData.extraCurricular}
+                softSkills={formData.softSkills}
+                onCertificationsChange={(value) => handleAdditionalSectionsChange('certifications', value)}
+                onHobbiesChange={(value) => handleAdditionalSectionsChange('hobbies', value)}
+                onExtraCurricularChange={(value) => handleAdditionalSectionsChange('extraCurricular', value)}
+                onSoftSkillsChange={(value) => handleAdditionalSectionsChange('softSkills', value)}
+              />
+            </TabsContent>
           </Tabs>
 
           <div className="space-y-4">
@@ -181,12 +242,18 @@ const Index = () => {
                 <Button variant="outline" onClick={() => loadFromLocalStorage()} className="gap-1">
                   Load Saved Data
                 </Button>
-                <Button onClick={handleDownload} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => handleDownload('docx')} variant="outline" className="bg-white dark:bg-gray-800">
+                    <Download className="mr-2 h-4 w-4" />
+                    DOCX
+                  </Button>
+                  <Button onClick={() => handleDownload('pdf')} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
+                    <Download className="mr-2 h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
               </div>
-              <div className="max-h-[800px] overflow-y-auto bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-lg shadow-lg">
+              <div className={`max-h-[800px] overflow-y-auto bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-lg shadow-lg font-${formData.font}`}>
                 <ResumePreview data={formData} />
               </div>
             </div>
