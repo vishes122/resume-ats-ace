@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PersonalInfo } from "@/components/ResumeForm/PersonalInfo";
 import { Experience } from "@/components/ResumeForm/Experience";
@@ -17,6 +17,12 @@ import { useTheme } from "next-themes";
 const Index = () => {
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  
+  useEffect(() => {
+    // This ensures the theme is properly applied when the component mounts
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.classList.toggle('dark', currentTheme === 'dark');
+  }, []);
   
   const [formData, setFormData] = useState({
     personalInfo: {
@@ -48,6 +54,12 @@ const Index = () => {
 
   const handleSkillsChange = (skills: string[]) => {
     setFormData((prev) => ({ ...prev, skills }));
+  };
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
   const handleDownload = () => {
@@ -93,7 +105,7 @@ const Index = () => {
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-2">
             <FileText className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-heading font-bold bg-gradient-to-br from-purple-700 to-pink-500 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-heading font-bold bg-gradient-to-br from-blue-700 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 bg-clip-text text-transparent">
               ATS-Friendly Resume Builder
             </h1>
           </div>
@@ -102,8 +114,9 @@ const Index = () => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={toggleTheme}
               className="rounded-full"
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
               {theme === "dark" ? (
                 <Sun className="h-5 w-5" />
@@ -126,11 +139,11 @@ const Index = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-purple-100/80 to-pink-100/80">
-              <TabsTrigger value="personal" className="data-[state=active]:bg-white">Personal</TabsTrigger>
-              <TabsTrigger value="experience" className="data-[state=active]:bg-white">Experience</TabsTrigger>
-              <TabsTrigger value="education" className="data-[state=active]:bg-white">Education</TabsTrigger>
-              <TabsTrigger value="skills" className="data-[state=active]:bg-white">Skills</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-blue-100/80 to-indigo-100/80 dark:from-blue-900/30 dark:to-indigo-900/30">
+              <TabsTrigger value="personal" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Personal</TabsTrigger>
+              <TabsTrigger value="experience" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Experience</TabsTrigger>
+              <TabsTrigger value="education" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Education</TabsTrigger>
+              <TabsTrigger value="skills" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Skills</TabsTrigger>
             </TabsList>
             
             <TabsContent value="personal" className="mt-4 animate-fade-in">
@@ -168,12 +181,12 @@ const Index = () => {
                 <Button variant="outline" onClick={() => loadFromLocalStorage()} className="gap-1">
                   Load Saved Data
                 </Button>
-                <Button onClick={handleDownload} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Button onClick={handleDownload} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white">
                   <Download className="mr-2 h-4 w-4" />
                   Download PDF
                 </Button>
               </div>
-              <div className="max-h-[800px] overflow-y-auto bg-white/50 backdrop-blur-sm p-1 rounded-lg shadow-lg">
+              <div className="max-h-[800px] overflow-y-auto bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-lg shadow-lg">
                 <ResumePreview data={formData} />
               </div>
             </div>
@@ -181,7 +194,7 @@ const Index = () => {
         </div>
       </div>
       
-      <footer className="py-6 border-t bg-white/80 backdrop-blur-sm relative z-10">
+      <footer className="py-6 border-t bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm relative z-10">
         <div className="container text-center text-sm text-muted-foreground">
           <p>Created by <a href="https://www.visheshsanghvi.me/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Vishesh Sanghvi</a></p>
         </div>

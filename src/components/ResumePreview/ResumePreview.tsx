@@ -34,14 +34,14 @@ interface ResumePreviewProps {
 
 export const ResumePreview = ({ data }: ResumePreviewProps) => {
   return (
-    <Card className="p-8 w-full bg-white text-black shadow-lg" id="resume-preview">
+    <Card className="p-8 w-full bg-white dark:bg-gray-800 text-black dark:text-white shadow-lg" id="resume-preview">
       {/* Header with optional profile image */}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
         {data.personalInfo.profileImage && (
           <div className="flex-shrink-0">
-            <Avatar className="h-24 w-24 border-2 border-gray-200">
+            <Avatar className="h-24 w-24 border-2 border-gray-200 dark:border-gray-700">
               <AvatarImage src={data.personalInfo.profileImage} alt={data.personalInfo.fullName} />
-              <AvatarFallback className="bg-gray-100 text-gray-500 text-xl">
+              <AvatarFallback className="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-xl">
                 {data.personalInfo.fullName ? data.personalInfo.fullName.charAt(0).toUpperCase() : "?"}
               </AvatarFallback>
             </Avatar>
@@ -53,19 +53,19 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
           <div className="text-sm flex flex-wrap gap-3 items-center justify-center md:justify-start">
             {data.personalInfo.email && (
               <span className="flex items-center gap-1">
-                <Mail className="h-3.5 w-3.5 text-gray-500" />
+                <Mail className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                 {data.personalInfo.email}
               </span>
             )}
             {data.personalInfo.phone && (
               <span className="flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5 text-gray-500" />
+                <Phone className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                 {data.personalInfo.phone}
               </span>
             )}
             {data.personalInfo.location && (
               <span className="flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5 text-gray-500" />
+                <MapPin className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                 {data.personalInfo.location}
               </span>
             )}
@@ -76,8 +76,8 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
       {/* Experience */}
       {data.experiences.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-xl font-bold border-b-2 border-gray-300 mb-3 flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-gray-600" />
+          <h2 className="text-xl font-bold border-b-2 border-gray-300 dark:border-gray-600 mb-3 flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             Professional Experience
           </h2>
           {data.experiences.map((exp, index) => (
@@ -85,9 +85,9 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-bold">{exp.position}</h3>
-                  <div className="text-gray-700">{exp.company}</div>
+                  <div className="text-gray-700 dark:text-gray-300">{exp.company}</div>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   {exp.startDate && format(new Date(exp.startDate), "MMM yyyy")} -{" "}
                   {exp.endDate ? format(new Date(exp.endDate), "MMM yyyy") : "Present"}
                 </div>
@@ -101,8 +101,8 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
       {/* Education */}
       {data.education.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-xl font-bold border-b-2 border-gray-300 mb-3 flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-gray-600" />
+          <h2 className="text-xl font-bold border-b-2 border-gray-300 dark:border-gray-600 mb-3 flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             Education
           </h2>
           {data.education.map((edu, index) => (
@@ -110,13 +110,13 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-bold">{edu.school}</h3>
-                  <div className="text-gray-700">{edu.degree}</div>
+                  <div className="text-gray-700 dark:text-gray-300">{edu.degree}</div>
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
                   {edu.graduationDate && format(new Date(edu.graduationDate), "MMM yyyy")}
                 </div>
               </div>
-              {edu.gpa && <div className="text-sm text-gray-600">GPA: {edu.gpa}</div>}
+              {edu.gpa && <div className="text-sm text-gray-600 dark:text-gray-400">GPA: {edu.gpa}</div>}
             </div>
           ))}
         </div>
@@ -125,15 +125,15 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
       {/* Skills */}
       {data.skills.length > 0 && (
         <div>
-          <h2 className="text-xl font-bold border-b-2 border-gray-300 mb-3 flex items-center gap-2">
-            <Award className="h-5 w-5 text-gray-600" />
+          <h2 className="text-xl font-bold border-b-2 border-gray-300 dark:border-gray-600 mb-3 flex items-center gap-2">
+            <Award className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             Skills
           </h2>
           <div className="flex flex-wrap gap-2">
             {data.skills.map((skill, index) => (
               <span
                 key={index}
-                className="bg-gray-100 px-2 py-1 rounded text-sm border border-gray-200"
+                className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm border border-gray-200 dark:border-gray-600"
               >
                 {skill}
               </span>
