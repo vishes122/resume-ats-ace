@@ -1,17 +1,17 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Mail, Lock, User } from "lucide-react";
+import { AnimatedGradient } from "@/components/ui/animated-gradient";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -116,17 +116,23 @@ export default function Auth() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden">
+      <AnimatedGradient />
+      
+      <div className="w-full max-w-md relative">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">ATS-Resume Builder</h1>
-          <p className="text-slate-600 mt-2">Create professional, ATS-friendly resumes</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            ATS-Resume Builder
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
+            Create professional, ATS-friendly resumes
+          </p>
         </div>
 
-        <Card className="border-slate-200 shadow-lg">
+        <Card className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 border-white/20 shadow-xl">
           <CardHeader>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-2 bg-white/50 dark:bg-gray-800/50">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
@@ -135,7 +141,7 @@ export default function Auth() {
               
               {!emailNeedsVerification && (
                 <>
-                  <TabsContent value="login" className="mt-4">
+                  <TabsContent value="login">
                     <Form {...loginForm}>
                       <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                         <FormField
@@ -145,7 +151,10 @@ export default function Auth() {
                             <FormItem>
                               <FormLabel>Email</FormLabel>
                               <FormControl>
-                                <Input placeholder="name@example.com" {...field} />
+                                <div className="relative">
+                                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input placeholder="name@example.com" {...field} className="pl-10" />
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -158,13 +167,16 @@ export default function Auth() {
                             <FormItem>
                               <FormLabel>Password</FormLabel>
                               <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
+                                <div className="relative">
+                                  <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700" disabled={loading}>
                           {loading ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -178,7 +190,7 @@ export default function Auth() {
                     </Form>
                   </TabsContent>
 
-                  <TabsContent value="register" className="mt-4">
+                  <TabsContent value="register">
                     <Form {...registerForm}>
                       <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                         <FormField
@@ -188,7 +200,10 @@ export default function Auth() {
                             <FormItem>
                               <FormLabel>Full Name</FormLabel>
                               <FormControl>
-                                <Input placeholder="John Doe" {...field} />
+                                <div className="relative">
+                                  <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input placeholder="John Doe" {...field} className="pl-10" />
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -201,7 +216,10 @@ export default function Auth() {
                             <FormItem>
                               <FormLabel>Email</FormLabel>
                               <FormControl>
-                                <Input placeholder="name@example.com" {...field} />
+                                <div className="relative">
+                                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input placeholder="name@example.com" {...field} className="pl-10" />
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -214,13 +232,16 @@ export default function Auth() {
                             <FormItem>
                               <FormLabel>Password</FormLabel>
                               <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
+                                <div className="relative">
+                                  <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
+                                </div>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <Button type="submit" className="w-full" disabled={loading}>
+                        <Button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700" disabled={loading}>
                           {loading ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -244,7 +265,7 @@ export default function Auth() {
           </CardFooter>
         </Card>
         
-        <div className="text-center mt-6 text-sm text-slate-500">
+        <div className="text-center mt-6 text-sm text-slate-500 dark:text-slate-400">
           <p>© {new Date().getFullYear()} <a href="https://www.visheshsanghvi.me" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Vishesh Sanghvi</a></p>
         </div>
       </div>
