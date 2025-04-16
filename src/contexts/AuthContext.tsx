@@ -54,10 +54,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         // For email_not_confirmed errors, allow login anyway for development purposes
         if (error.code === "email_not_confirmed") {
-          // Try to get the user profile to see if they exist
-          const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
+          // Try to get the user credentials to see if they exist
+          const { data: signInData } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
           
-          if (userData?.user) {
+          if (signInData.user) {
             // Set email verification required flag but don't block login
             setIsEmailVerificationRequired(true);
             toast.warning("Your email is not verified, but you can proceed for development purposes");
