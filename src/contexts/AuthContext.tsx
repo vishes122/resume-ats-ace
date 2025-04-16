@@ -46,33 +46,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
+      // First attempt to sign in normally
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) {
-        // For email_not_confirmed errors, allow login anyway for development purposes
-        if (error.code === "email_not_confirmed") {
-          // Try to get the user credentials to see if they exist
-          const { data: signInData } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+      // If we get an email_not_confirmed error
+      if (error && error.code === "email_not_confirmed") {
+        console.log("Email not confirmed, attempting to retrieve user data");
+        
+        // For development purposes, we'll create a custom session
+        // by using admin data fetching instead
+        const { data: userData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', email)
+          .single();
+        
+        if (userData && !profileError) {
+          // User exists in the profiles table
+          setIsEmailVerificationRequired(true);
           
-          if (signInData.user) {
-            // Set email verification required flag but don't block login
-            setIsEmailVerificationRequired(true);
-            toast.warning("Your email is not verified, but you can proceed for development purposes");
-            return;
-          } else {
-            throw error;
-          }
+          // Set the user data manually for development purposes
+          const devUser = {
+            id: userData.id,
+            email: userData.email,
+            user_metadata: {
+              full_name: userData.full_name
+            }
+          } as unknown as User;
+          
+          setUser(devUser);
+          // We can't create a real session without auth, but we can fake it for development
+          setSession({ user: devUser } as Session);
+          
+          toast.warning("Email not verified but proceeding for development purposes");
+          setLoading(false);
+          return;
         } else {
-          throw error;
+          // User doesn't exist in the profiles table
+          toast.error(`Login failed: Account not found or incorrect password`);
+          throw new Error("Account not found");
         }
+      } else if (error) {
+        // Handle other errors
+        toast.error(`Login error: ${error.message}`);
+        throw error;
       }
       
+      // Normal successful login
       toast.success("Successfully logged in!");
     } catch (error: any) {
       const errorWithCode = {
@@ -80,13 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         code: error.__isAuthError ? error.code : "unknown_error"
       };
       
-      if (error.code === "email_not_confirmed") {
-        setIsEmailVerificationRequired(true);
-        toast.warning("Please verify your email before logging in");
-      } else {
-        toast.error(`Login error: ${error.message}`);
-      }
-      
+      toast.error(`Login error: ${error.message || "Failed to login"}`);
       throw errorWithCode;
     } finally {
       setLoading(false);
@@ -110,6 +127,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // For development, consider the user as logged in even without email confirmation
       setIsEmailVerificationRequired(true);
+      
+      // Manually set user data for development experience
+      if (data.user) {
+        setUser(data.user);
+        // We can't create a real session without auth verification, but we can fake it
+        setSession({ user: data.user } as Session);
+      }
+      
       toast.success("Registration successful! In a production environment, you would need to verify your email.");
       console.log("Registration successful for:", email, "User data:", data);
     } catch (error: any) {
@@ -129,6 +154,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      // Clear our manual session/user if we were using the development bypass
+      setUser(null);
+      setSession(null);
+      setIsEmailVerificationRequired(false);
       toast.success("Logged out successfully");
     } catch (error: any) {
       toast.error(`Logout error: ${error.message}`);
