@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PersonalInfo } from "@/components/ResumeForm/PersonalInfo";
@@ -13,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AnimatedGradient } from "@/components/ui/animated-gradient";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Index = () => {

@@ -40,7 +40,36 @@ export const toPDF = async (elementId: string, fileName: string) => {
   }
 };
 
-export const toWord = async (data: any, fileName: string) => {
+interface ResumeData {
+  personalInfo: {
+    fullName: string;
+    email: string;
+    phone: string;
+    location: string;
+    profileImage?: string;
+  };
+  experiences: Array<{
+    company: string;
+    position: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  education: Array<{
+    school: string;
+    degree: string;
+    graduationDate: string;
+    gpa?: string;
+  }>;
+  skills: string[];
+  certifications?: string[];
+  hobbies?: string[];
+  extraCurricular?: string[];
+  softSkills?: string[];
+  font?: string;
+}
+
+export const toWord = async (data: ResumeData, fileName: string) => {
   try {
     const doc = new Document({
       sections: [{
