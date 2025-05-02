@@ -171,8 +171,14 @@ const Index = () => {
         newData.skills = [...importedData.skills];
       }
       
+      // Fix for projects to ensure technologies is not optional
       if (importedData.projects && importedData.projects.length > 0) {
-        newData.projects = [...importedData.projects];
+        // Ensure every project has a technologies array
+        const projectsWithTechnologies = importedData.projects.map(project => ({
+          ...project,
+          technologies: project.technologies || []
+        }));
+        newData.projects = projectsWithTechnologies;
       }
       
       return newData;
