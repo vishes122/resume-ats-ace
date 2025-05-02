@@ -68,7 +68,7 @@ export interface ResumeData {
     startDate?: string;
     endDate?: string;
     link?: string;
-    technologies?: string[];
+    technologies: string[]; // Changed from optional to required
   }>;
   certifications?: string[];
   hobbies?: string[];
