@@ -21,6 +21,7 @@ export const ResumeImport = ({ onImport }: ResumeImportProps) => {
       const file = files[0];
       if (file.type === "application/pdf") {
         setSelectedFile(file);
+        toast.info(`Selected file: ${file.name}`);
       } else {
         toast.error("Please select a PDF file");
         event.target.value = "";
@@ -37,12 +38,23 @@ export const ResumeImport = ({ onImport }: ResumeImportProps) => {
     
     setIsLoading(true);
     try {
+      toast.info("Analyzing resume...");
       const parsedData = await parseResumePDF(selectedFile);
+      
+      // Validate that we have at least some basic data
+      if (
+        !parsedData.personalInfo?.email && 
+        !parsedData.personalInfo?.fullName && 
+        parsedData.skills?.length === 0
+      ) {
+        toast.warning("Limited information extracted from your resume. You may need to manually fill in most fields.");
+      }
+      
       onImport(parsedData);
       toast.success("Resume imported successfully! Some fields have been auto-filled.");
     } catch (error) {
       console.error("Error parsing resume:", error);
-      toast.error("Failed to import resume. Please try again with a different file.");
+      toast.error("Failed to import resume. Please ensure your PDF is not password-protected and is text-based (not scanned).");
     } finally {
       setIsLoading(false);
     }

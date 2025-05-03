@@ -1,8 +1,11 @@
-
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { saveAs } from 'file-saver';
 import * as pdfjs from 'pdfjs-dist';
+import { GlobalWorkerOptions } from 'pdfjs-dist';
+
+// Set the worker source for PDF.js
+GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export const toPDF = async (elementId: string, fileName: string) => {
   const element = document.getElementById(elementId);
@@ -282,7 +285,9 @@ export const parseResumePDF = async (file: File): Promise<Partial<ResumeData>> =
       extractedText += pageText + ' ';
     }
     
-    // Basic parsing logic - this could be improved with more sophisticated NLP approaches
+    console.log("Extracted text from PDF:", extractedText);
+    
+    // Enhanced parsing logic - improved from the original implementation
     const parsedData: Partial<ResumeData> = {
       personalInfo: {
         fullName: '',
@@ -296,40 +301,169 @@ export const parseResumePDF = async (file: File): Promise<Partial<ResumeData>> =
       projects: []
     };
     
-    // Extract email with regex
+    // Extract name - look for name at beginning of document or after common headers
+    const nameRegex = /^([A-Z][a-z]+(?: [A-Z][a-z]+)+)|(?:Name:|NAME:)\s*([A-Z][a-z]+(?: [A-Z][a-z]+)+)/i;
+    const nameMatch = extractedText.match(nameRegex);
+    if (nameMatch) {
+      parsedData.personalInfo.fullName = nameMatch[1] || nameMatch[2];
+    }
+    
+    // Extract email with regex (more robust pattern)
     const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
     const emailMatch = extractedText.match(emailRegex);
     if (emailMatch && emailMatch.length > 0) {
       parsedData.personalInfo.email = emailMatch[0];
     }
     
-    // Extract phone number with regex
-    const phoneRegex = /(\+?[0-9][0-9\s-]{7,})/g;
+    // Extract phone number with improved regex
+    const phoneRegex = /(\+?[\d]{1,3}[-\.\s]?)?(\(?\d{3}\)?[-\.\s]?\d{3}[-\.\s]?\d{4}|\d{10})/g;
     const phoneMatch = extractedText.match(phoneRegex);
     if (phoneMatch && phoneMatch.length > 0) {
       parsedData.personalInfo.phone = phoneMatch[0];
     }
     
-    // Try to extract skills by looking for common skill section headers
-    const skillSectionRegex = /(SKILLS|TECHNICAL SKILLS|CORE COMPETENCIES)[\s\S]*?(EXPERIENCE|EDUCATION|PROJECTS|WORK|EMPLOYMENT)/i;
+    // Extract location - look for common patterns
+    const locationRegex = /(?:Address:|Location:|City:|LOCATION:)\s*([\w\s,.]+)(?=\n|,|\s{2}|$)/i;
+    const locationMatch = extractedText.match(locationRegex);
+    if (locationMatch && locationMatch[1]) {
+      parsedData.personalInfo.location = locationMatch[1].trim();
+    }
+    
+    // Extract skills - improved to catch more technologies
+    const skillSectionRegex = /(SKILLS|TECHNICAL SKILLS|CORE COMPETENCIES|TECHNOLOGIES|TOOLS|LANGUAGES)[\s\S]*?(EXPERIENCE|EDUCATION|PROJECTS|WORK|EMPLOYMENT|CERTIFICATIONS|ACHIEVEMENTS)/i;
     const skillSectionMatch = extractedText.match(skillSectionRegex);
     
     if (skillSectionMatch && skillSectionMatch[0]) {
-      const skillText = skillSectionMatch[0];
-      // Common programming languages and technologies
+      let skillText = skillSectionMatch[0];
+      
+      // Common programming languages and technologies - expanded list
       const technologies = [
-        'JavaScript', 'TypeScript', 'Python', 'Java', 'C#', 'C\\+\\+', 'Ruby', 'PHP',
-        'HTML', 'CSS', 'React', 'Angular', 'Vue', 'Node.js', 'Express', 'Django',
-        'SQL', 'MongoDB', 'AWS', 'Azure', 'Docker', 'Kubernetes'
+        'JavaScript', 'TypeScript', 'Python', 'Java', 'C#', 'C\\+\\+', 'Ruby', 'PHP', 'Swift', 'Kotlin',
+        'HTML', 'CSS', 'SASS', 'LESS', 'React', 'Angular', 'Vue', 'Svelte', 'Node.js', 'Express', 'Django',
+        'Flask', 'Spring', 'ASP.NET', 'Laravel', 'Rails', 'Next.js', 'Nuxt', 'Gatsby',
+        'SQL', 'MongoDB', 'PostgreSQL', 'MySQL', 'SQLite', 'Redis', 'Firebase', 'Supabase',
+        'AWS', 'Azure', 'GCP', 'Heroku', 'Vercel', 'Netlify', 'Docker', 'Kubernetes',
+        'REST', 'GraphQL', 'gRPC', 'API', 'JSON', 'XML', 'WebSockets',
+        'Git', 'GitHub', 'GitLab', 'Bitbucket', 'CI/CD', 'Jenkins', 'GitHub Actions',
+        'Agile', 'Scrum', 'Kanban', 'Jira', 'Confluence', 'Trello',
+        'TensorFlow', 'PyTorch', 'Scikit-learn', 'Pandas', 'NumPy', 'Data Science',
+        'UI/UX', 'Figma', 'Sketch', 'Adobe XD', 'Photoshop', 'Illustrator'
       ];
       
-      const skillRegex = new RegExp(`(${technologies.join('|')})`, 'gi');
-      const skillMatches = skillText.match(skillRegex);
+      // First try to extract skills that are separated by commas or bullets
+      const commaSkillsRegex = /([A-Za-z0-9#\+\-\.]+(?:\s[A-Za-z0-9#\+\-\.]+)*(?:,\s*|\s*\•\s*|\s*\-\s*|\s*\n\s*))/g;
+      const commaSkillMatches = skillText.match(commaSkillsRegex);
       
-      if (skillMatches) {
-        parsedData.skills = Array.from(new Set(skillMatches));
+      let extractedSkills = new Set<string>();
+      
+      if (commaSkillMatches) {
+        commaSkillMatches.forEach(skill => {
+          const cleanedSkill = skill.replace(/[,\•\-\n\r]/g, '').trim();
+          if (cleanedSkill && cleanedSkill.length > 1) {
+            extractedSkills.add(cleanedSkill);
+          }
+        });
+      }
+      
+      // Also look for known technology terms
+      const techRegex = new RegExp(`\\b(${technologies.join('|')})\\b`, 'gi');
+      const techMatches = extractedText.match(techRegex);
+      
+      if (techMatches) {
+        techMatches.forEach(tech => {
+          extractedSkills.add(tech.trim());
+        });
+      }
+      
+      parsedData.skills = Array.from(extractedSkills);
+    }
+    
+    // Try to extract experience information
+    const experienceSectionRegex = /(EXPERIENCE|WORK EXPERIENCE|EMPLOYMENT|PROFESSIONAL EXPERIENCE)[\s\S]*?(EDUCATION|PROJECTS|SKILLS|CERTIFICATIONS|ACHIEVEMENTS|$)/i;
+    const experienceSectionMatch = extractedText.match(experienceSectionRegex);
+    
+    if (experienceSectionMatch && experienceSectionMatch[1]) {
+      const experienceSection = experienceSectionMatch[0];
+      // Look for company names, positions and dates
+      const expEntryRegex = /([A-Z][A-Za-z0-9\s&.,]+)[\s\|•]*([A-Za-z0-9\s.,]+)[\s\|•]*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)[\s\-\–—]2\d{3}\s*(?:[-\–—]\s*(?:Present|Current|Now|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)[\s\-\–—]2\d{3})?)?)/gi;
+      
+      const expMatches = [...experienceSection.matchAll(expEntryRegex)];
+      
+      if (expMatches.length > 0) {
+        parsedData.experiences = expMatches.map(match => ({
+          company: match[1]?.trim() || 'Unknown Company',
+          position: match[2]?.trim() || 'Position',
+          startDate: match[3]?.split(/[-\–—]/)[0]?.trim() || 'Unknown Start Date',
+          endDate: (match[3]?.includes('Present') || match[3]?.includes('Current')) ? 
+                  'Present' : 
+                  match[3]?.split(/[-\–—]/)[1]?.trim() || 'Current',
+          description: 'Experience extracted from resume',
+        }));
       }
     }
+    
+    // Try to extract education information
+    const educationSectionRegex = /(EDUCATION|ACADEMIC BACKGROUND|QUALIFICATIONS)[\s\S]*?(EXPERIENCE|WORK|PROFESSIONAL EXPERIENCE|PROJECTS|SKILLS|$)/i;
+    const educationSectionMatch = extractedText.match(educationSectionRegex);
+    
+    if (educationSectionMatch && educationSectionMatch[1]) {
+      const educationSection = educationSectionMatch[0];
+      
+      // Look for school names, degrees and graduation dates
+      const eduEntryRegex = /(University|College|Institute|School) of ([A-Za-z\s&.,]+)[\s\|•]*([A-Za-z0-9\s.,]+)[\s\|•]*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)[\s\-\–—]2\d{3})/gi;
+      
+      const eduMatches = [...educationSection.matchAll(eduEntryRegex)];
+      
+      if (eduMatches.length > 0) {
+        parsedData.education = eduMatches.map(match => ({
+          school: `${match[1]} of ${match[2]?.trim()}` || 'Unknown Institution',
+          degree: match[3]?.trim() || 'Degree',
+          graduationDate: match[4]?.trim() || 'Unknown Graduation Date',
+          gpa: '',
+        }));
+      } else {
+        // Try another pattern if the first one doesn't match
+        const altEduRegex = /([A-Z][A-Za-z\s&.,]+(?:University|College|Institute|School))[\s\|•]*([A-Za-z0-9\s.,]+)[\s\|•]*(2\d{3}(?:\s*[-\–—]\s*2\d{3})?)/gi;
+        
+        const altEduMatches = [...educationSection.matchAll(altEduRegex)];
+        
+        if (altEduMatches.length > 0) {
+          parsedData.education = altEduMatches.map(match => ({
+            school: match[1]?.trim() || 'Unknown Institution',
+            degree: match[2]?.trim() || 'Degree',
+            graduationDate: match[3]?.trim() || 'Unknown Graduation Date',
+            gpa: '',
+          }));
+        }
+      }
+    }
+    
+    // Try to extract projects
+    const projectsSectionRegex = /(PROJECTS|PERSONAL PROJECTS|PROFESSIONAL PROJECTS)[\s\S]*?(EDUCATION|EXPERIENCE|SKILLS|CERTIFICATIONS|ACHIEVEMENTS|$)/i;
+    const projectsSectionMatch = extractedText.match(projectsSectionRegex);
+    
+    if (projectsSectionMatch && projectsSectionMatch[1]) {
+      const projectsSection = projectsSectionMatch[0];
+      
+      // Look for project titles and descriptions
+      const projEntryRegex = /([A-Z][A-Za-z0-9\s&.,]+)[\s\|•]*([A-Za-z0-9\s.,]+)[\s\|•]*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)[\s\-\–—]2\d{3}(?:\s*[-\–—]\s*(?:Present|Current|Now|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)[\s\-\–—]2\d{3}))?)?/gi;
+      
+      const projMatches = [...projectsSection.matchAll(projEntryRegex)];
+      
+      if (projMatches.length > 0) {
+        parsedData.projects = projMatches.map(match => ({
+          title: match[1]?.trim() || 'Project Title',
+          description: match[2]?.trim() || 'Project Description',
+          startDate: match[3]?.split(/[-\–—]/)[0]?.trim() || undefined,
+          endDate: (match[3]?.includes('Present') || match[3]?.includes('Current')) ? 
+                  'Present' : 
+                  match[3]?.split(/[-\–—]/)[1]?.trim() || undefined,
+          technologies: [], // Empty array but required
+        }));
+      }
+    }
+    
+    console.log("Parsed resume data:", parsedData);
     
     return parsedData;
   } catch (error) {
