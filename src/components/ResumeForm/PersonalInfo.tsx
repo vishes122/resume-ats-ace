@@ -5,8 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Phone, MapPin, Camera, Trash2 } from "lucide-react";
+import { User, Mail, Phone, MapPin, Camera, Trash2, FileText } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PersonalInfoProps {
   formData: {
@@ -15,6 +17,8 @@ interface PersonalInfoProps {
     phone: string;
     location: string;
     profileImage?: string;
+    summary?: string;
+    fontSize?: string;
   };
   onChange: (field: string, value: string) => void;
 }
@@ -159,6 +163,39 @@ export const PersonalInfo = ({ formData, onChange }: PersonalInfoProps) => {
               className="transition-all focus-visible:ring-blue-400"
             />
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="summary" className="flex items-center gap-2 text-sm font-medium">
+              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" /> Professional Summary
+            </Label>
+            <Textarea
+              id="summary"
+              value={formData.summary || ""}
+              onChange={(e) => onChange("summary", e.target.value)}
+              placeholder="A brief summary of your professional background and career goals"
+              className="transition-all focus-visible:ring-blue-400 min-h-[120px]"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="fontSize" className="flex items-center gap-2 text-sm font-medium">
+              Font Size
+            </Label>
+            <Select 
+              value={formData.fontSize || "medium"} 
+              onValueChange={(value) => onChange("fontSize", value)}
+            >
+              <SelectTrigger id="fontSize" className="w-full">
+                <SelectValue placeholder="Select font size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">Small</SelectItem>
+                <SelectItem value="medium">Medium (Default)</SelectItem>
+                <SelectItem value="large">Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
               <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" /> Email

@@ -38,6 +38,8 @@ const Index = () => {
       phone: "",
       location: "",
       profileImage: "",
+      summary: "",
+      fontSize: "medium",
     },
     experiences: [],
     education: [],

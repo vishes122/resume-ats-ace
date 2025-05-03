@@ -7,7 +7,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 const templates = [
   { id: "classic", name: "Classic", description: "Traditional resume layout" },
   { id: "modern", name: "Modern", description: "Clean and contemporary design" },
-  { id: "minimal", name: "Minimal", description: "Simplified and distraction-free" }
+  { id: "minimal", name: "Minimal", description: "Simplified and distraction-free" },
+  { id: "executive", name: "Executive", description: "Professional with bold headings" },
+  { id: "creative", name: "Creative", description: "Unique layout with color accents" }
 ];
 
 interface TemplateSelectorProps {
@@ -54,7 +56,11 @@ export const TemplateSelector = ({ value, onChange }: TemplateSelectorProps) => 
                     ? "bg-white" 
                     : template.id === "modern" 
                       ? "bg-gradient-to-br from-blue-50 to-indigo-50" 
-                      : "bg-gray-50"
+                      : template.id === "executive"
+                        ? "bg-slate-50"
+                        : template.id === "creative"
+                          ? "bg-gradient-to-br from-purple-50 to-pink-50"
+                          : "bg-gray-50"
                 }`}>
                   <div className="absolute top-3 left-3 right-3 h-6 bg-gray-300 rounded"></div>
                   <div className="absolute top-12 left-3 w-1/2 h-4 bg-gray-200 rounded"></div>
