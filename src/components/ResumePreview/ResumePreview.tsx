@@ -46,6 +46,23 @@ interface ResumePreviewProps {
   data: ResumeData;
 }
 
+// Helper function to safely format dates
+const safelyFormatDate = (dateString: string | undefined): string => {
+  if (!dateString) return "";
+  
+  try {
+    // Check if the date string is valid
+    const dateObj = new Date(dateString);
+    if (isNaN(dateObj.getTime())) {
+      return dateString; // Return the original string if it's not a valid date
+    }
+    return format(dateObj, "MMM yyyy");
+  } catch (error) {
+    console.error("Date formatting error:", error, "for date:", dateString);
+    return dateString; // Return the original string on error
+  }
+};
+
 export const ResumePreview = ({ data }: ResumePreviewProps) => {
   const templateClass = data.template || "classic";
 
@@ -165,8 +182,8 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
                   <div className="text-gray-700 dark:text-gray-300">{exp.company}</div>
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {exp.startDate && format(new Date(exp.startDate), "MMM yyyy")} -{" "}
-                  {exp.endDate ? format(new Date(exp.endDate), "MMM yyyy") : "Present"}
+                  {exp.startDate && safelyFormatDate(exp.startDate)} -{" "}
+                  {exp.endDate ? safelyFormatDate(exp.endDate) : "Present"}
                 </div>
               </div>
               <p className="mt-2 text-sm whitespace-pre-line">{exp.description}</p>
@@ -215,9 +232,9 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
                 </div>
                 {(project.startDate || project.endDate) && (
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {project.startDate && format(new Date(project.startDate), "MMM yyyy")}
+                    {project.startDate && safelyFormatDate(project.startDate)}
                     {project.startDate && project.endDate && " - "}
-                    {project.endDate ? format(new Date(project.endDate), "MMM yyyy") : 
+                    {project.endDate ? safelyFormatDate(project.endDate) : 
                      project.startDate ? "Present" : ""}
                   </div>
                 )}
@@ -275,7 +292,7 @@ export const ResumePreview = ({ data }: ResumePreviewProps) => {
                   <div className="text-gray-700 dark:text-gray-300">{edu.degree}</div>
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {edu.graduationDate && format(new Date(edu.graduationDate), "MMM yyyy")}
+                  {edu.graduationDate && safelyFormatDate(edu.graduationDate)}
                 </div>
               </div>
               {edu.gpa && <div className="text-sm text-gray-600 dark:text-gray-400">GPA: {edu.gpa}</div>}
